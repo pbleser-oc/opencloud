@@ -145,6 +145,17 @@ var _ = Describe("Tika", func() {
 			Expect(doc.Content).To(Equal("body test stop words!!!"))
 		})
 
+		It("ignores zero exposure time", func() {
+			fullResponse = `[{"exif:ExposureTime": "0.0"}]`
+
+			doc, err := tika.Extract(context.TODO(), &provider.ResourceInfo{
+				Type: provider.ResourceType_RESOURCE_TYPE_FILE,
+				Size: 1,
+			})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(doc.Photo).To(BeNil())
+		})
+
 		It("removes stop words", func() {
 			body = "body to test stop words!!! against almost everyone"
 			language = "en"
