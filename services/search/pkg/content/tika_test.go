@@ -146,14 +146,16 @@ var _ = Describe("Tika", func() {
 		})
 
 		It("ignores zero exposure time", func() {
-			fullResponse = `[{"exif:ExposureTime": "0.0"}]`
+			fullResponse = `[{"exif:ExposureTime": "0.0", "exif:FNumber": "2.0"}]`
 
 			doc, err := tika.Extract(context.TODO(), &provider.ResourceInfo{
 				Type: provider.ResourceType_RESOURCE_TYPE_FILE,
 				Size: 1,
 			})
 			Expect(err).ToNot(HaveOccurred())
-			Expect(doc.Photo).To(BeNil())
+			Expect(doc.Photo).ToNot(BeNil())
+			Expect(doc.Photo.FNumber).To(Equal(libregraph.PtrFloat64(2)))
+			Expect(doc.Photo.ExposureDenominator).To(BeNil())
 		})
 
 		It("removes stop words", func() {
