@@ -339,6 +339,27 @@ var _ = Describe("Driveitems", func() {
 				Expect(res.Value[0].Location).To(BeNil())
 				Expect(res.Value[0].LibreGraphMeFollowing).To(BeNil())
 				Expect(res.Value[0].LibreGraphTags).To(BeNil())
+				Expect(res.Value[0].PendingOperations).To(BeNil())
+			})
+
+			It("reports a pending content update while the item is being processed", func() {
+				gatewayClient.On("ListContainer", mock.Anything, mock.Anything).Return(&provider.ListContainerResponse{
+					Status: status.NewOK(ctx),
+					Infos: []*provider.ResourceInfo{
+						{
+							Type:   provider.ResourceType_RESOURCE_TYPE_FILE,
+							Id:     &provider.ResourceId{StorageId: "storageid", SpaceId: "spaceid", OpaqueId: "opaqueid"},
+							Etag:   "etag",
+							Mtime:  utils.TimeToTS(mtime),
+							Opaque: utils.AppendPlainToOpaque(nil, "status", "processing"),
+						},
+					},
+				}, nil)
+
+				res := assertItemsList(1)
+				Expect(res.Value[0].PendingOperations).ToNot(BeNil())
+				Expect(res.Value[0].PendingOperations.PendingContentUpdate).ToNot(BeNil())
+				Expect(res.Value[0].PendingOperations.PendingContentUpdate.QueuedDateTime).To(BeNil())
 			})
 
 			It("returns tags if metadata is available", func() {
