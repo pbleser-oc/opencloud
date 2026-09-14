@@ -24,11 +24,14 @@ var (
 
 // Metrics defines the available metrics of this service.
 type Metrics struct {
-	routingFailures   prometheus.Counter
-	legacyCount       *prometheus.CounterVec
-	duration          *prometheus.HistogramVec
-	legacyDuration    *prometheus.HistogramVec
-	inflightByService map[string]*atomic.Int64
+	legacyMethodRequests  *prometheus.CounterVec   // for backwards compatibility
+	legacyMethodErrors    *prometheus.CounterVec   // for backwards compatibility
+	legacyMethodDuration  *prometheus.HistogramVec // for backwards compatibility
+	routingFailures       prometheus.Counter
+	duration              *prometheus.HistogramVec
+	legacyServiceCount    *prometheus.CounterVec   // for compatibility when native histograms are not supported
+	legacyServiceDuration *prometheus.HistogramVec // for compatibility when native histograms are not supported
+	inflightByService     map[string]*atomic.Int64
 }
 
 const (
@@ -56,6 +59,28 @@ func resultFromStatusCode(statusCode int) string {
 // New initializes the available metrics.
 func New(routes iter.Seq[config.Route], logger *log.Logger) (*Metrics, error) {
 	m := &Metrics{
+		// kept for backwards compatibility:
+		legacyMethodRequests: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: Namespace,
+			Subsystem: Subsystem,
+			Name:      "requests_total",
+			Help:      "How many requests processed in total",
+		}, []string{LabelMethod}),
+		// kept for backwards compatibility:
+		legacyMethodErrors: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: Namespace,
+			Subsystem: Subsystem,
+			Name:      "errors_total",
+			Help:      "How many requests run into errors",
+		}, []string{LabelMethod}),
+		// kept for backwards compatibility:
+		legacyMethodDuration: prometheus.NewHistogramVec(prometheus.HistogramOpts{
+			Namespace: Namespace,
+			Subsystem: Subsystem,
+			Name:      "duration_seconds",
+			Help:      "request duration in seconds",
+		}, []string{LabelMethod}),
+
 		routingFailures: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace: Namespace,
 			Subsystem: Subsystem,
@@ -86,20 +111,20 @@ func New(routes iter.Seq[config.Route], logger *log.Logger) (*Metrics, error) {
 		// First, a counter which has the higher cardinality of
 		//   method ⨯ service ⨯ result
 		// but without buckets, since it's just a counter.
-		legacyCount: prometheus.NewCounterVec(prometheus.CounterOpts{
+		legacyServiceCount: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: Namespace,
 			Subsystem: Subsystem,
-			Name:      "request_total",
+			Name:      "service_request_total",
 			Help:      "total number of requests",
 		}, []string{LabelMethod, LabelService, LabelResult}),
 
 		// Secondly, a histogram that buckets the duration, but since this is not a native histogram,
 		// we want to keep the cardinality in check by only using the service as label.
-		legacyDuration: prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		legacyServiceDuration: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Namespace: Namespace,
 			Subsystem: Subsystem,
-			Name:      "duration_seconds",
-			Help:      "request duration in seconds (legacy)",
+			Name:      "service_duration_seconds",
+			Help:      "request duration by service in seconds (legacy)",
 		}, []string{LabelService}),
 	}
 
@@ -113,7 +138,7 @@ func New(routes iter.Seq[config.Route], logger *log.Logger) (*Metrics, error) {
 		if method == "" {
 			method = http.MethodGet
 		}
-		m.legacyDuration.WithLabelValues(route.Service) // initializes a Histogram as empty
+		m.legacyServiceDuration.WithLabelValues(route.Service) // initializes a Histogram as empty
 
 		var counter atomic.Int64
 		inflightByService[route.Service] = &counter
@@ -128,10 +153,14 @@ func New(routes iter.Seq[config.Route], logger *log.Logger) (*Metrics, error) {
 		})
 
 		for _, result := range []string{ResultSuccess, ResultClientError, ResultServerError} {
-			m.duration.WithLabelValues(method, route.Service, result)           // initializes a Histogram as empty
-			m.legacyCount.WithLabelValues(method, route.Service, result).Add(0) // initializes a Counter as empty
+			m.duration.WithLabelValues(method, route.Service, result)                  // initializes a Histogram as empty
+			m.legacyServiceCount.WithLabelValues(method, route.Service, result).Add(0) // initializes a Counter as empty
 		}
 	}
+
+	m.legacyMethodDuration.WithLabelValues(http.MethodGet)
+	m.legacyMethodRequests.WithLabelValues(http.MethodGet).Add(0)
+	m.legacyMethodErrors.WithLabelValues(http.MethodGet).Add(0)
 
 	m.inflightByService = inflightByService
 
@@ -146,8 +175,11 @@ func New(routes iter.Seq[config.Route], logger *log.Logger) (*Metrics, error) {
 		buildInfo,
 		m.routingFailures,
 		m.duration,
-		m.legacyCount,
-		m.legacyDuration,
+		m.legacyServiceCount,
+		m.legacyServiceDuration,
+		m.legacyMethodDuration,
+		m.legacyMethodRequests,
+		m.legacyMethodErrors,
 	))
 	// need to iterate over these as the number of entries is dynamic:
 	{
@@ -167,8 +199,17 @@ func (m *Metrics) Duration(r *http.Request, statusCode int, duration time.Durati
 	result := resultFromStatusCode(statusCode)
 
 	m.duration.WithLabelValues(r.Method, service, result).Observe(d)
-	m.legacyDuration.WithLabelValues(service).Observe(d)
-	m.legacyCount.WithLabelValues(r.Method, service, result).Inc()
+
+	// for compatibility when native histograms are not supported:
+	m.legacyServiceDuration.WithLabelValues(service).Observe(d)
+	m.legacyServiceCount.WithLabelValues(r.Method, service, result).Inc()
+
+	// for backwards compatibility:
+	m.legacyMethodDuration.WithLabelValues(r.Method).Observe(d)
+	m.legacyMethodRequests.WithLabelValues(r.Method).Inc()
+	if statusCode >= 500 {
+		m.legacyMethodErrors.WithLabelValues(r.Method).Inc()
+	}
 }
 
 func (m *Metrics) RoutingFailed(r *http.Request) {

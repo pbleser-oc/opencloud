@@ -302,6 +302,9 @@ The following metrics are exposed by the proxy service:
 
 | Name | Labels | Description |
 | ---- | ------ | ----------- |
+| `opencloud_proxy_requests_total` | • `method`: HTTP method of the request | [Counter](https://prometheus.io/docs/tutorials/understanding_metric_types/#counter) metric which reports the total number of HTTP requests |
+| `opencloud_proxy_errors_total` | • `method`: HTTP method of the request | [Counter](https://prometheus.io/docs/tutorials/understanding_metric_types/#counter) metric which reports the total number of HTTP requests which have failed. That counts all response codes >= 500. |
+| `opencloud_proxy_duration_seconds` | • `method`: HTTP method of the request | [Histogram](https://prometheus.io/docs/tutorials/understanding_metric_types/#histogram) of the time (in seconds) each request took. A histogram metric uses buckets to count the number of events that fall into each bucket |
 | `opencloud_proxy_concurrent_service_requests` | • `service`: identifier of the service the request is proxied to | Counts the number of in-flight requests that are being processed at a given time |
 | `opencloud_proxy_routing_failure_count` | | Counts the number of inbound requests that cannot be proxied due to a failure of determining how to route it |
 | `opencloud_proxy_duration_seconds` | • `service`: identifier of the service the request is proxied to | Classic histogram that measures the duration of proxied HTTP requests, per service |
