@@ -30,6 +30,7 @@ type Config struct {
 	Events            Events            `yaml:"events"`
 	FilemetadataCache FilemetadataCache `yaml:"filemetadata_cache"`
 	IDCache           IDCache           `yaml:"id_cache"`
+	RevisionsCleanup  RevisionsCleanup  `yaml:"revisions_cleanup"`
 	MountID           string            `yaml:"mount_id" env:"STORAGE_USERS_MOUNT_ID" desc:"Mount ID of this storage." introductionVersion:"1.0.0"`
 	ReadOnly          bool              `yaml:"readonly" env:"STORAGE_USERS_READ_ONLY" desc:"Set this storage to be read-only." introductionVersion:"1.0.0"`
 	UploadExpiration  int64             `yaml:"upload_expiration" env:"STORAGE_USERS_UPLOAD_EXPIRATION" desc:"Duration in seconds after which uploads will expire. Note that when setting this to a low number, uploads could be cancelled before they are finished and return a 403 to the user." introductionVersion:"1.0.0"`
@@ -224,6 +225,15 @@ type Events struct {
 	AuthUsername      string `yaml:"username" env:"OC_EVENTS_AUTH_USERNAME;STORAGE_USERS_EVENTS_AUTH_USERNAME" desc:"The username to authenticate with the events broker. The events broker is the OpenCloud service which receives and delivers events between the services." introductionVersion:"1.0.0"`
 	AuthPassword      string `yaml:"password" env:"OC_EVENTS_AUTH_PASSWORD;STORAGE_USERS_EVENTS_AUTH_PASSWORD" desc:"The password to authenticate with the events broker. The events broker is the OpenCloud service which receives and delivers events between the services." introductionVersion:"1.0.0"`
 	// TODO use TLSRootCACertificate string `yaml:"tls_root_ca_certificate" env:"OC_EVENTS_TLS_ROOT_CA_CERTIFICATE;STORAGE_USERS_EVENTS_TLS_ROOT_CA_CERTIFICATE" desc:"The root CA certificate used to validate the server's TLS certificate. If provided STORAGE_USERS_EVENTS_TLS_INSECURE will be seen as false." introductionVersion:"1.0.0"`
+}
+
+// RevisionsCleanup configures the deletion of old revisions, for the 'decomposed', 'decomposeds3' and 'posix' storage drivers
+type RevisionsCleanup struct {
+	Strategy       string `yaml:"strategy" env:"OC_REVISIONS_CLEANUP_STRATEGY" desc:"Which old revisions (versions) of a file to delete whenever the file gets a new revision. 'disabled' keeps all revisions. A strategy is a comma-separated list of up to three parts: a number of revisions, which counts from the newest one (e.g. '10'), a duration with one of the units 'w', 'd', 'h', 'm' or 's' (e.g. '30d'; days and weeks followed by '=' count from midnight, e.g. '1d='), and 'auto', which thins out revisions the older they get. 'D' deletes everything beyond D, e.g. '10', '30d', or '0' to delete all revisions. 'D, auto' keeps everything within D and thins out the older revisions, e.g. '14d, auto'. 'auto, D' deletes everything beyond D and thins out the rest, e.g. 'auto, 90d'. 'D1, D2' keeps everything within D1 and deletes everything beyond D2, e.g. '5, 30d'. 'D1, auto, D2' also thins out in between, e.g. '7d, auto, 90d'. The age of a revision is the time its content was written, i.e. the modification time the file had before it was changed, not the time of that change. Only files that get a new revision are cleaned up, including revisions created from changes on disk with posix. An invalid value makes the storage driver fail at startup." introductionVersion:"%%NEXT%%"`
+	Async          bool   `yaml:"async" env:"OC_REVISIONS_CLEANUP_ASYNC" desc:"Run the revision cleanup in background workers, so that it does not slow down the upload, restore or change that created the new revision. When set to false, the cleanup runs right away." introductionVersion:"%%NEXT%%"`
+	AsyncWorkers   int    `yaml:"async_workers" env:"OC_REVISIONS_CLEANUP_ASYNC_WORKERS" desc:"Number of background workers for the revision cleanup. A value of 0 determines it automatically: half the available CPUs, respecting container CPU limits, but at least 2." introductionVersion:"%%NEXT%%"`
+	AsyncQueueSize int    `yaml:"async_queue_size" env:"OC_REVISIONS_CLEANUP_ASYNC_QUEUE_SIZE" desc:"Number of files that can wait for a background revision cleanup. A value of 0 determines it automatically: 64 per worker." introductionVersion:"%%NEXT%%"`
+	AsyncQueueFull string `yaml:"async_queue_full" env:"OC_REVISIONS_CLEANUP_ASYNC_QUEUE_FULL" desc:"What happens when a file gets a new revision while the revision cleanup queue is full. 'block' waits for room, so no cleanup is ever skipped, but writes can slow down under heavy load. 'drop' skips the cleanup of that file, which is cleaned up with its next revision." introductionVersion:"%%NEXT%%"`
 }
 
 // FilemetadataCache holds cache config
