@@ -111,7 +111,7 @@ func New(registerer prometheus.Registerer, logger *log.Logger, httpPathSplitter 
 			Subsystem: Subsystem,
 			Name:      "http_request_duration_seconds",
 			Help:      "Duration of HTTP operations in seconds.",
-			Buckets:   prometheus.DefBuckets,
+			Buckets:   ocmetrics.RequestDurationBuckets,
 		}), []string{LabelMethod, LabelPath, LabelVersion, LabelResource, LabelCode, LabelResult}), // when changing these, make sure to also modify the methods below accordingly
 		httpPathSplitter: httpPathSplitter,
 	}

@@ -49,6 +49,7 @@ func New(opts ...Option) *Metrics {
 			Subsystem: Subsystem,
 			Name:      "invitation_duration_seconds",
 			Help:      "Invitation request time in seconds",
+			Buckets:   ocmetrics.RequestDurationBuckets,
 		}), []string{}),
 	}
 

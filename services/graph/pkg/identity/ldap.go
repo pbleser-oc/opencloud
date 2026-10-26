@@ -202,7 +202,7 @@ func NewLDAPBackend(lc ldap.Client, config config.LDAP, logger *log.Logger, name
 			Subsystem: subsystem,
 			Name:      "ldap_client_operation_duration_seconds",
 			Help:      "Duration of LDAP operations performed by the Graph service in seconds.",
-			Buckets:   prometheus.DefBuckets,
+			Buckets:   ocmetrics.FastOperationDurationBuckets,
 			ConstLabels: prometheus.Labels{
 				MetricLabelUri:   config.URI,
 				MetricLabelWrite: write,

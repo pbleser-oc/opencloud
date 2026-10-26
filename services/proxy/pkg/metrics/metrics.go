@@ -79,6 +79,7 @@ func New(routes iter.Seq[config.Route], logger *log.Logger) (*Metrics, error) {
 			Subsystem: Subsystem,
 			Name:      "duration_seconds",
 			Help:      "request duration in seconds",
+			Buckets:   ocmetrics.TransferDurationBuckets,
 		}, []string{LabelMethod}),
 
 		routingFailures: prometheus.NewCounter(prometheus.CounterOpts{
@@ -124,6 +125,7 @@ func New(routes iter.Seq[config.Route], logger *log.Logger) (*Metrics, error) {
 			Subsystem: Subsystem,
 			Name:      "service_duration_seconds",
 			Help:      "request duration by service in seconds (legacy)",
+			Buckets:   ocmetrics.TransferDurationBuckets,
 		}, []string{LabelService}),
 	}
 

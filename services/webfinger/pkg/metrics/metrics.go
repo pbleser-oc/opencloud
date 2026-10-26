@@ -49,6 +49,7 @@ func New(opts ...Option) *Metrics {
 			Subsystem: Subsystem,
 			Name:      "webfinger_duration_seconds",
 			Help:      "Webfinger request time in seconds",
+			Buckets:   ocmetrics.FastOperationDurationBuckets,
 		}), []string{}),
 	}
 

@@ -23,6 +23,24 @@ const (
 	NativeHistogramMinResetDuration time.Duration = 0
 )
 
+// The upper bounds (in seconds) of the classic buckets of our duration histograms, shared
+// by the services so that their histograms can be compared.
+//
+// Every bucket adds a time series per label combination for the Prometheus scrapers that
+// only ingest the classic histogram, so each set is kept to about a dozen buckets.
+var (
+	// For requests and API calls, which take milliseconds up to tens of seconds.
+	RequestDurationBuckets = []float64{0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60}
+	// For fast operations, such as LDAP operations, which mostly take a few milliseconds.
+	FastOperationDurationBuckets = []float64{0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10}
+	// For requests that include the transfer of their request or response body, such as the
+	// ones going through the proxy, including uploads, downloads and long-lived connections.
+	TransferDurationBuckets = []float64{0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60, 300, 1800}
+	// For long-running processing, such as postprocessing or indexing, which take from a
+	// fraction of a second up to many minutes.
+	ProcessingDurationBuckets = []float64{0.1, 0.5, 1, 2.5, 5, 10, 30, 60, 120, 300, 600, 1200}
+)
+
 // Add the settings for the native part of a histogram to opts, so that the histogram is
 // exposed in both classic and native form (dual exposition).
 //

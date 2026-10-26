@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -78,4 +79,26 @@ func TestNativeHistogramOpts(t *testing.T) {
 	require.NotNil(h.Schema)
 	require.NotEmpty(h.GetPositiveSpan())
 	require.EqualValues(1, h.GetSampleCount())
+}
+
+func TestDurationBuckets(t *testing.T) {
+	sets := map[string][]float64{
+		"RequestDurationBuckets":       RequestDurationBuckets,
+		"FastOperationDurationBuckets": FastOperationDurationBuckets,
+		"TransferDurationBuckets":      TransferDurationBuckets,
+		"ProcessingDurationBuckets":    ProcessingDurationBuckets,
+	}
+	for name, buckets := range sets {
+		t.Run(name, func(t *testing.T) {
+			require := require.New(t)
+			require.True(slices.IsSorted(buckets), "buckets must be in increasing order")
+			require.Len(slices.Compact(slices.Clone(buckets)), len(buckets), "buckets must be unique")
+			h := observe(t, DualHistogramOpts(prometheus.HistogramOpts{
+				Name:    "test_" + randName(),
+				Help:    "test",
+				Buckets: buckets,
+			}))
+			require.Len(h.GetBucket(), len(buckets))
+		})
+	}
 }

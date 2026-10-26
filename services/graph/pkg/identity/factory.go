@@ -116,7 +116,7 @@ func CreateIdentityBackends(name string, cfg *config.Config, logger *log.Logger,
 				Subsystem: metrics.Subsystem,
 				Name:      "identity_backend_api_duration_seconds",
 				Help:      "Duration of API operations performed by the Graph service identity backend in seconds.",
-				Buckets:   prometheus.DefBuckets,
+				Buckets:   ocmetrics.RequestDurationBuckets,
 				ConstLabels: prometheus.Labels{
 					MetricLabelType: name,
 				},

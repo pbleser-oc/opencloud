@@ -48,7 +48,7 @@ var (
 		Subsystem: Subsystem,
 		Name:      "duration_seconds",
 		Help:      "Duration of postprocessing operations in seconds",
-		Buckets:   []float64{0.1, 0.5, 1, 2.5, 5, 10, 30, 60, 120, 300, 600, 1200},
+		Buckets:   ocmetrics.ProcessingDurationBuckets,
 	}), []string{"status"})
 )
 

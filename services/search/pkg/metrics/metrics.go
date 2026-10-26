@@ -42,14 +42,14 @@ var (
 		Subsystem: Subsystem,
 		Name:      "search_duration_seconds",
 		Help:      "Duration of search operations in seconds",
-		Buckets:   []float64{0.1, 0.5, 1, 2.5, 5, 10, 30, 60},
+		Buckets:   ocmetrics.RequestDurationBuckets,
 	}), []string{"status"})
 	indexDuration = promauto.NewHistogramVec(ocmetrics.DualHistogramOpts(prometheus.HistogramOpts{
 		Namespace: Namespace,
 		Subsystem: Subsystem,
 		Name:      "index_duration_seconds",
 		Help:      "Duration of indexing operations in seconds",
-		Buckets:   []float64{0.1, 0.5, 1, 2.5, 5, 10, 30, 60, 120, 300, 600, 1200},
+		Buckets:   ocmetrics.ProcessingDurationBuckets,
 	}), []string{"status"})
 )
 
