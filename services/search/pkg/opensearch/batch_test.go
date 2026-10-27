@@ -2,52 +2,57 @@ package opensearch_test
 
 import (
 	"strings"
-	"testing"
 
-	"github.com/stretchr/testify/require"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	"github.com/opencloud-eu/opencloud/services/search/internal/opensearchtest"
 	"github.com/opencloud-eu/opencloud/services/search/pkg/opensearch"
 )
 
-func TestBatch_Push(t *testing.T) {
-	tc := opensearchtest.NewDefaultTestClient(t, defaultConfig.Engine.OpenSearch.Client)
+var _ = Describe("Batch", func() {
+	Describe("Push", func() {
+		var tc *opensearchtest.TestClient
 
-	t.Run("reports the documents the bulk API rejected", func(t *testing.T) {
-		indexName := "opencloud-test-batch-push-rejected"
-		tc.Require.IndicesReset([]string{indexName})
-		defer tc.Require.IndicesDelete([]string{indexName})
+		BeforeEach(func() {
+			tc = opensearchtest.NewDefaultTestClient(GinkgoTB(), defaultConfig.Engine.OpenSearch.Client)
+		})
 
-		// Name is a string, mapping it as a long makes every document fail to parse.
-		tc.Require.IndicesCreate(indexName, strings.NewReader(`{"mappings":{"properties":{"Name":{"type":"long"}}}}`))
+		It("reports the documents the bulk API rejected", func() {
+			const indexName = "opencloud-test-batch-push-rejected"
+			tc.Require.IndicesReset([]string{indexName})
+			deleteIndexOnCleanup(tc, indexName)
 
-		batch, err := opensearch.NewBatch(tc.Client(), indexName, 10)
-		require.NoError(t, err)
+			// Name is a string, mapping it as a long makes every document fail to parse.
+			tc.Require.IndicesCreate(indexName, strings.NewReader(`{"mappings":{"properties":{"Name":{"type":"long"}}}}`))
 
-		document := opensearchtest.Testdata.Resources.File
-		require.NoError(t, batch.Upsert(document.ID, document))
+			batch, err := opensearch.NewBatch(tc.Client(), indexName, 10)
+			Expect(err).ToNot(HaveOccurred())
 
-		err = batch.Push()
-		require.Error(t, err)
-		require.ErrorContains(t, err, document.ID)
-		require.ErrorContains(t, err, "mapper_parsing_exception")
-		tc.Require.IndicesCount([]string{indexName}, nil, 0)
+			document := opensearchtest.Testdata.Resources.File
+			Expect(batch.Upsert(document.ID, document)).To(Succeed())
+
+			err = batch.Push()
+			Expect(err).To(MatchError(ContainSubstring(document.ID)))
+			Expect(err).To(MatchError(ContainSubstring("mapper_parsing_exception")))
+			tc.Require.IndicesCount([]string{indexName}, nil, 0)
+		})
+
+		It("pushes the documents the bulk API accepted", func() {
+			const indexName = "opencloud-test-batch-push-accepted"
+			tc.Require.IndicesReset([]string{indexName})
+			deleteIndexOnCleanup(tc, indexName)
+
+			tc.Require.IndicesCreate(indexName, strings.NewReader(opensearch.IndexManagerLatest.String()))
+
+			batch, err := opensearch.NewBatch(tc.Client(), indexName, 10)
+			Expect(err).ToNot(HaveOccurred())
+
+			document := opensearchtest.Testdata.Resources.File
+			Expect(batch.Upsert(document.ID, document)).To(Succeed())
+			Expect(batch.Push()).To(Succeed())
+
+			tc.Require.IndicesCount([]string{indexName}, nil, 1)
+		})
 	})
-
-	t.Run("pushes the documents the bulk API accepted", func(t *testing.T) {
-		indexName := "opencloud-test-batch-push-accepted"
-		tc.Require.IndicesReset([]string{indexName})
-		defer tc.Require.IndicesDelete([]string{indexName})
-
-		tc.Require.IndicesCreate(indexName, strings.NewReader(opensearch.IndexManagerLatest.String()))
-
-		batch, err := opensearch.NewBatch(tc.Client(), indexName, 10)
-		require.NoError(t, err)
-
-		document := opensearchtest.Testdata.Resources.File
-		require.NoError(t, batch.Upsert(document.ID, document))
-		require.NoError(t, batch.Push())
-
-		tc.Require.IndicesCount([]string{indexName}, nil, 1)
-	})
-}
+})
