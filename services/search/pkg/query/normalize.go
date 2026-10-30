@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	provider "github.com/cs3org/go-cs3apis/cs3/storage/provider/v1beta1"
+	"github.com/opencloud-eu/reva/v2/pkg/utils"
 	"reflect"
 
 	"github.com/opencloud-eu/opencloud/pkg/ast"
@@ -37,10 +38,7 @@ func normalizeNodes(nodes []ast.Node, resolve func(string) string, defaultKey st
 		case *ast.StringNode:
 			node.Key = resolveKey(node.Key)
 			if FieldIsPath(node.Key) {
-				node.Value = strings.TrimSuffix(node.Value, "/")
-				if node.Value == "" {
-					node.Value = "."
-				}
+				node.Value = utils.MakeRelativePath(node.Value)
 			}
 			if FieldValueIsNormalized(node.Key) {
 				node.Value = strings.ToLower(node.Value)

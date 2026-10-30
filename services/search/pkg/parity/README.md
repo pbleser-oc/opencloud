@@ -252,6 +252,9 @@ Fixtures:
 | PATH-08 | `path:"./parent/"` | child.jpg, parent | child.jpg, parent | child.jpg, parent | ✅ |
 | PATH-09 | `path:"/"` | child.jpg, docs-lower, docs-mixed, docs-upper, parent | child.jpg, docs-lower, docs-mixed, docs-upper, parent | child.jpg, docs-lower, docs-mixed, docs-upper, parent | ✅ |
 | PATH-10 | `path:""` | child.jpg, docs-lower, docs-mixed, docs-upper, parent | child.jpg, docs-lower, docs-mixed, docs-upper, parent | child.jpg, docs-lower, docs-mixed, docs-upper, parent | ✅ |
+| PATH-11 | `path:"/parent"` | child.jpg, parent | child.jpg, parent | child.jpg, parent | ✅ |
+| PATH-12 | `path:"parent"` | child.jpg, parent | child.jpg, parent | child.jpg, parent | ✅ |
+| PATH-13 | `path:"parent/*"` | child.jpg | child.jpg | child.jpg | ✅ |
 
 ### fields
 

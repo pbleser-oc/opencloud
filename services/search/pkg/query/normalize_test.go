@@ -127,6 +127,23 @@ var _ = Describe("Normalize", func() {
 		}))
 	})
 
+	DescribeTable("normalizes path values to the stored relative form",
+		func(in, want string) {
+			got := norm(&ast.StringNode{Key: "path", Value: in})
+			Expect(got).To(Equal([]ast.Node{&ast.StringNode{Key: "Path", Value: want}}))
+		},
+		Entry("relative", "./parent", "./parent"),
+		Entry("trailing slash", "./parent/", "./parent"),
+		Entry("absolute", "/parent", "./parent"),
+		Entry("bare", "parent", "./parent"),
+		Entry("nested bare", "parent/child.jpg", "./parent/child.jpg"),
+		Entry("root", "/", "."),
+		Entry("empty", "", "."),
+		Entry("dot", ".", "."),
+		Entry("wildcard", "*child*", "./*child*"),
+		Entry("wildcard trailing slash", "./par*/", "./par*"),
+	)
+
 	It("converts value nodes to pointers", func() {
 		got := norm(
 			ast.StringNode{Key: "name", Value: "x"},
