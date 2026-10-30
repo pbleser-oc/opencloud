@@ -228,6 +228,7 @@ func (b *Batch) Push() error {
 		if len(bulkOperations) == 0 {
 			return nil
 		}
+		defer func() { bulkOperations = nil }()
 
 		var body strings.Builder
 		for _, operation := range bulkOperations {
@@ -264,7 +265,6 @@ func (b *Batch) Push() error {
 			return fmt.Errorf("failed to execute bulk operations, failures: %s", failures)
 		}
 
-		bulkOperations = nil
 		return nil
 	}
 
@@ -272,21 +272,25 @@ func (b *Batch) Push() error {
 	//  unfortunately, operations like DeleteByQuery cannot be part of the bulk API,
 	//  so we need to push the previous bulk operations before executing such operations
 	//  this might lead to smaller bulks than the configured size, but ensures correct order
+	var errs []error
 	for _, operation := range b.operations {
 		switch op := operation.(type) {
 		case func() []map[string]any:
 			bulkOperations = append(bulkOperations, op()...)
 		case func() error:
 			if err := pushBulkOperations(); err != nil {
-				return fmt.Errorf("failed to push operations: %w", err)
+				errs = append(errs, fmt.Errorf("failed to push operations: %w", err))
 			}
 			if err := op(); err != nil {
-				return fmt.Errorf("failed to execute operation: %w", err)
+				errs = append(errs, fmt.Errorf("failed to execute operation: %w", err))
 			}
 		}
 	}
+	if err := pushBulkOperations(); err != nil {
+		errs = append(errs, fmt.Errorf("failed to push operations: %w", err))
+	}
 
-	return pushBulkOperations()
+	return errors.Join(errs...)
 }
 
 func (b *Batch) withSizeLimit(f func() error) error {
