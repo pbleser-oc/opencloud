@@ -140,8 +140,12 @@ var _ = Describe("Normalize", func() {
 		Entry("root", "/", "."),
 		Entry("empty", "", "."),
 		Entry("dot", ".", "."),
-		Entry("wildcard", "*child*", "./*child*"),
-		Entry("wildcard trailing slash", "./par*/", "./par*"),
+		Entry("wildcard", "./par*/", "./par*"),
+		Entry("bare wildcard", "parent/*", "./parent/*"),
+		Entry("leading wildcard", "*child*", "*child*"),
+		Entry("leading wildcard covers the prefix", "*/parent", "*/parent"),
+		Entry("leading single-char wildcard covers the prefix", "?/parent", "?/parent"),
+		Entry("leading wildcard trailing slash", "*/parent/", "*/parent"),
 	)
 
 	It("converts value nodes to pointers", func() {

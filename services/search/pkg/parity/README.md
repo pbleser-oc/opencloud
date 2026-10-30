@@ -255,6 +255,10 @@ Fixtures:
 | PATH-11 | `path:"/parent"` | child.jpg, parent | child.jpg, parent | child.jpg, parent | ✅ |
 | PATH-12 | `path:"parent"` | child.jpg, parent | child.jpg, parent | child.jpg, parent | ✅ |
 | PATH-13 | `path:"parent/*"` | child.jpg | child.jpg | child.jpg | ✅ |
+| PATH-14 | `path:"*/parent"` | child.jpg, parent | child.jpg, parent | child.jpg, parent | ✅ |
+| PATH-15 | `path:"?/parent"` | child.jpg, parent | child.jpg, parent | child.jpg, parent | ✅ |
+| PATH-16 | `path:"*/Documents"` | docs-mixed | docs-mixed | docs-mixed | ✅ |
+| PATH-17 | `path:"*/parent/"` | child.jpg, parent | child.jpg, parent | child.jpg, parent | ✅ |
 
 ### fields
 

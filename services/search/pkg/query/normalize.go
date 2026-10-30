@@ -38,7 +38,12 @@ func normalizeNodes(nodes []ast.Node, resolve func(string) string, defaultKey st
 		case *ast.StringNode:
 			node.Key = resolveKey(node.Key)
 			if FieldIsPath(node.Key) {
-				node.Value = utils.MakeRelativePath(node.Value)
+				if strings.IndexAny(node.Value, "*?") == 0 {
+					// a leading wildcard stands in for the "./" prefix, anchoring would break it
+					node.Value = strings.TrimSuffix(node.Value, "/")
+				} else {
+					node.Value = utils.MakeRelativePath(node.Value)
+				}
 			}
 			if FieldValueIsNormalized(node.Key) {
 				node.Value = strings.ToLower(node.Value)
